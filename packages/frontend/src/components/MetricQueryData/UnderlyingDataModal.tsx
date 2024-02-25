@@ -3,7 +3,7 @@ import { FC } from 'react';
 import { useMetricQueryDataContext } from './MetricQueryDataProvider';
 import UnderlyingDataModalContent from './UnderlyingDataModalContent';
 
-const UnderlyingDataModal: FC = () => {
+const UnderlyingDataModal: FC = (props) => {
     const { isUnderlyingDataModalOpen, closeUnderlyingDataModal } =
         useMetricQueryDataContext();
 
@@ -15,7 +15,7 @@ const UnderlyingDataModal: FC = () => {
             size="auto"
         >
             <Modal.Overlay />
-            <UnderlyingDataModalContent />
+            <UnderlyingDataModalContent isInChartFullScreen={props.isInChartFullScreen} />
         </Modal.Root>
     ) : null;
 };

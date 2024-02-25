@@ -48,7 +48,7 @@ const defaultMetricQuery: MetricQuery = {
     additionalMetrics: [],
 };
 
-const UnderlyingDataModalContent: FC<Props> = () => {
+const UnderlyingDataModalContent: FC<Props> = (props) => {
     const modalContentElementSize = useElementSize();
 
     const modalHeaderElementSize = useElementSize();
@@ -325,7 +325,11 @@ const UnderlyingDataModalContent: FC<Props> = () => {
     return (
         <Modal.Content
             ref={modalContentElementSize.ref}
-            sx={{
+            sx={props.isInChartFullScreen ? {
+                height: 'calc(80dvh - (1rem * 2))',
+                width: 'calc(80dvw - (1rem * 2))',
+                overflowY: 'hidden',
+            } : {
                 height: 'calc(100dvh - (1rem * 2))',
                 width: 'calc(100dvw - (1rem * 2))',
                 overflowY: 'hidden',

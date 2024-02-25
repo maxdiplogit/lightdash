@@ -41,6 +41,7 @@ type Props<T> = {
     onEdit: (tile: T) => void;
     children?: ReactNode;
     extraHeaderElement?: ReactNode;
+    extraCloseButton?: ReactNode
     minimal?: boolean;
     lockHeaderVisibility?: boolean;
 };
@@ -58,6 +59,7 @@ const TileBase = <T extends Dashboard['tiles'][number]>({
     onEdit,
     children,
     extraHeaderElement,
+    extraCloseButton,
     titleHref,
     minimal = false,
     lockHeaderVisibility = false,
@@ -266,6 +268,7 @@ const TileBase = <T extends Dashboard['tiles'][number]>({
                                 </Menu.Target>
                             </Menu>
                         )}
+                        { extraCloseButton }
                     </ButtonsWrapper>
                 ) : null}
             </HeaderContainer>

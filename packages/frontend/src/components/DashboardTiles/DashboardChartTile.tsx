@@ -43,6 +43,8 @@ import {
     IconStack,
     IconTableExport,
     IconTelescope,
+    IconMaximize,
+    IconX,
 } from '@tabler/icons-react';
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -80,6 +82,7 @@ import UnderlyingDataModal from '../MetricQueryData/UnderlyingDataModal';
 import { EchartSeriesClickEvent } from '../SimpleChart';
 import EditChartMenuItem from './EditChartMenuItem';
 import TileBase from './TileBase/index';
+import DashboardFullScreenChartModal from '../common/modal/DashboardFullScreenChartModal';
 
 interface ExportResultAsCSVModalProps {
     projectUuid: string;
@@ -273,7 +276,7 @@ interface DashboardChartTileMainProps
     chartAndResults: ApiChartAndResults;
 }
 
-const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
+export const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
     const { showToastSuccess } = useToaster();
     const clipboard = useClipboard({ timeout: 200 });
     const { track } = useTracking();
@@ -292,7 +295,7 @@ const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
     } = props;
     const { chart, explore, metricQuery, rows, appliedDashboardFilters } =
         chartAndResults;
-
+    
     const { projectUuid, dashboardUuid } = useParams<{
         projectUuid: string;
         dashboardUuid: string;
@@ -504,8 +507,123 @@ const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
         <>
             <TileBase
                 lockHeaderVisibility={isCommentsMenuOpen}
-                extraHeaderElement={
+                extraCloseButton={ props.isChartOpenedInFullScreen ? <>
+                    <ActionIcon size="sm" onClick={props.onCloseFullScreenChartModelX}>
+                        <MantineIcon icon={IconX} />
+                    </ActionIcon>
+                </> : null }
+                extraHeaderElement={ props.isChartOpenedInFullScreen ?
                     <>
+                        {dashboardCommentsCheck?.isDashboardTileCommentsFeatureEnabled &&
+                            dashboardCommentsCheck.userCanManageDashboardComments && (
+                                <DashboardTileComments
+                                    opened={isCommentsMenuOpen}
+                                    onOpen={() => setIsCommentsMenuOpen(true)}
+                                    onClose={() => setIsCommentsMenuOpen(false)}
+                                    dashboardTileUuid={tileUuid}
+                                />
+                            )}
+                        {appliedFilterRules.length > 0 && (
+                            <HoverCard
+                                withArrow
+                                withinPortal
+                                shadow="md"
+                                position="bottom-end"
+                                offset={4}
+                                arrowOffset={10}
+                            >
+                                <HoverCard.Dropdown>
+                                    <Stack spacing="xs" align="flex-start">
+                                        <Text color="gray.7" fw={500}>
+                                            Dashboard filter
+                                            {appliedFilterRules.length > 1
+                                                ? 's'
+                                                : ''}{' '}
+                                            applied:
+                                        </Text>
+
+                                        {appliedFilterRules.map(
+                                            (filterRule) => {
+                                                const fields: Field[] = explore
+                                                    ? getVisibleFields(explore)
+                                                    : [];
+
+                                                const field = fields.find(
+                                                    (f) => {
+                                                        return (
+                                                            fieldId(f) ===
+                                                            filterRule.target
+                                                                .fieldId
+                                                        );
+                                                    },
+                                                );
+                                                if (
+                                                    !field ||
+                                                    !isFilterableField(field)
+                                                )
+                                                    return `Tried to reference field with unknown id: ${filterRule.target.fieldId}`;
+
+                                                const filterRuleLabels =
+                                                    getConditionalRuleLabel(
+                                                        filterRule,
+                                                        field,
+                                                    );
+                                                return (
+                                                    <Badge
+                                                        key={filterRule.id}
+                                                        variant="outline"
+                                                        color="gray.4"
+                                                        radius="sm"
+                                                        size="lg"
+                                                        fz="xs"
+                                                        fw="normal"
+                                                        style={{
+                                                            textTransform:
+                                                                'none',
+                                                            color: 'black',
+                                                        }}
+                                                    >
+                                                        <Text fw={600} span>
+                                                            {
+                                                                filterRuleLabels.field
+                                                            }
+                                                            :
+                                                        </Text>{' '}
+                                                        {filterRule.disabled ? (
+                                                            <>is any value</>
+                                                        ) : (
+                                                            <>
+                                                                {
+                                                                    filterRuleLabels.operator
+                                                                }{' '}
+                                                                <Text
+                                                                    fw={600}
+                                                                    span
+                                                                >
+                                                                    {
+                                                                        filterRuleLabels.value
+                                                                    }
+                                                                </Text>
+                                                            </>
+                                                        )}
+                                                    </Badge>
+                                                );
+                                            },
+                                        )}
+                                    </Stack>
+                                </HoverCard.Dropdown>
+
+                                <HoverCard.Target>
+                                    <ActionIcon size="sm">
+                                        <MantineIcon icon={IconFilter} />
+                                    </ActionIcon>
+                                </HoverCard.Target>
+                            </HoverCard>
+                        )}
+                    </> : <>
+                        <ActionIcon size="sm" onClick={props.onOpenFullScreenChartModal}>
+                            <MantineIcon icon={IconMaximize} />
+                        </ActionIcon>
                         {dashboardCommentsCheck?.isDashboardTileCommentsFeatureEnabled &&
                             dashboardCommentsCheck.userCanManageDashboardComments && (
                                 <DashboardTileComments
@@ -838,7 +956,7 @@ const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
     );
 };
 
-const DashboardChartTileMinimal: FC<DashboardChartTileMainProps> = (props) => {
+export const DashboardChartTileMinimal: FC<DashboardChartTileMainProps> = (props) => {
     const {
         tile: {
             uuid: tileUuid,
@@ -898,6 +1016,16 @@ export const GenericDashboardChartTile: FC<
     }>();
     const { user } = useApp();
     const userCanManageChart = user.data?.ability?.can('manage', 'SavedChart');
+    
+    const [ isFullScreenChartModalOpen, setIsFullScreenChartModalOpen ] = useState(false);
+
+    const onOpenFullScreenChartModal = () => {
+        setIsFullScreenChartModalOpen(true);
+    };
+
+    const onCloseFullScreenChartModal = () => {
+        setIsFullScreenChartModalOpen(false);
+    };
 
     if (isLoading) {
         return (
@@ -972,10 +1100,22 @@ export const GenericDashboardChartTile: FC<
                     tile={tile}
                     isEditMode={isEditMode}
                     chartAndResults={data}
+                    onOpenFullScreenChartModal={onOpenFullScreenChartModal}
+                    onCloseFullScreenChartModel={onCloseFullScreenChartModal}
                 />
             )}
             <UnderlyingDataModal />
             <DrillDownModal />
+            {isFullScreenChartModalOpen ? <DashboardFullScreenChartModal
+                onCloseFullScreenChartModal={onCloseFullScreenChartModal}
+                minimal = {minimal}
+                tile={tile}
+                isEditMode={isEditMode}
+                isLoading={isLoading}
+                data={data}
+                error={error}
+                rest={rest}
+            /> : null}
         </MetricQueryDataProvider>
     );
 };
